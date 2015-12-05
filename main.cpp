@@ -12,40 +12,31 @@ int nz = 99;
 int n = nx*ny*nz;
 unsigned char* v = (unsigned char*)malloc(n*sizeof(unsigned char));
 
-double simpson(int i, int k,double a, double b, double (*f) (int, int, double))
+double simpson(int i, int k, double a, double b, double (*f) (int, int, double))
 {
-	double h = 4.5;
-	double soma = f(i,k,a) + f(i,k,b);
-	int w = 0;
-	double j = a;
-
-	while(1)
-	{
-		j += h;
-		if(j > b - 1)
-			break;
-		if(w%2 == 0)
-			soma += f(i,k,j) *2;
-		else
-			soma += f(i,k,j) *4;
-
-		w++;
-	}
-
-	return (h/3) * soma; 
+	double h = b - a;
+    return (h / 6) * (f(i,k,a) + 4 * f(i,k,(a + b) / 2) + f(i,k,b));
 }
 
 
-double tr(double s)
+double CompositeSimpson(int i, int k,double start, double end, double (*f) (int, int, double))
 {
-	if(s < 0.3)
-	{
-		return 0.0;
-	}
-	else
-	{
-		return (0.05 * (s - 0.3));
-	}
+	double a = start;
+    double b = 4.5;
+    double sum = 0;
+
+    while (b < end) {
+        sum += simpson(i,k,a, b, f);
+        a = b;
+        b = b + 4.5;
+    }
+    if (a < end)
+        sum += simpson(i,k,a, end, f);
+
+    if(sum > 1)
+    	return 1;
+    else
+    	return sum;
 }
 
 double f2(int i, int k, double j)
@@ -60,9 +51,16 @@ double f2(int i, int k, double j)
 
 	d /= 255.0;
 
-	return tr(d);
-}
+	if(d < 0.3)
+	{
+		return 0.0;
+	}
+	else
+	{
+		return (0.05 * (d - 0.3));
+	}
 
+}
 
 double f1(int i, int k, double j)
 {
@@ -95,10 +93,12 @@ int main()
 	{
 		for(int k = 0; k < 99; k++)
 		{
-			double d1 = simpson(2 * i, k, 0, 255.0, f1);
-			double d2 = simpson((2* i)+ 1, k, 0, 255.0, f1);
+			double d1 = CompositeSimpson(2 * i, k, 0, 255.0, f1);
+			double d2 = CompositeSimpson((2* i)+ 1, k, 0, 255.0, f1);
 			
-			int d = (int) (((d1 + d2) / 2 )* 255.0);
+			double d = (d1 + d2) / 2;
+
+			d*= 255;
 
 			if(d > maior)
 				maior = d;
@@ -110,9 +110,9 @@ int main()
 
 	out << maior << "\n";
 
-	for(int i =0 ; i< 128; i++)
+	for(int k = 0; k < 99; k++)
 	{
-		for(int k = 0; k < 99; k++)
+		for(int i =0 ; i< 128; i++)
 		{
 			out << densidade[i][k] << " ";
 		}
